@@ -1,0 +1,65 @@
+name: Auto Rebase & Merge on PR Label or Manual Dispatch
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch:
+
+jobs:
+  auto-rebase-merge:
+    runs-on: ubuntu-latest
+    if: |
+      contains(github.event.pull_request.labels.*.name, 'auto-merge') ||
+      contains(github.event.pull_request.body, '[auto-merge]')
+    steps:
+      - name: Check if Draft or WIP
+        run: |
+          if [[ "${{ github.event.pull_request.draft }}" == "true" || "${{ github.event.pull_request.title }}" == *"[WIP]"* ]]; then
+            echo "PR is a draft or WIP. Skipping auto-merge."
+            exit 1
+          fi
+
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Auto Rebase if Needed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/${{ github.event.pull_request.base.repo.full_name }}.git
+          git fetch upstream ${{ github.event.pull_request.base.ref }}
+          git rebase upstream/${{ github.event.pull_request.base.ref }} || true
+
+      - name: Push rebased branch
+        run: |
+          git push origin HEAD:${{ github.event.pull_request.head.ref }} --force
+
+      - name: Auto Approve bot PRs
+        if: github.actor == 'github-actions[bot]'
+        uses: hmarr/auto-approve-action@v3
+
+      - name: Merge Pull Request (Squash)
+        uses: peter-evans/merge-pull-request@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request: ${{ github.event.pull_request.number }}
+          merge-method: squash
+          commit-title: "auto: squash merge #${{ github.event.pull_request.number }}"
+          commit-message: "Automated squash merge by GitHub Action"
+
+      - name: Slack Notification
+        if: always()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          if [ $? -eq 0 ]; then
+            STATUS="Success"
+            MESSAGE=":white_check_mark: PR #${{ github.event.pull_request.number }} has been auto-merged in ${{ github.repository }}."
+          else
+            STATUS="Failed"
+            MESSAGE=":x: Auto-merge attempt for PR #${{ github.event.pull_request.number }} failed in ${{ github.repository }}."
+          fi
+          curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"$MESSAGE\"}" $SLACK_WEBHOOK
