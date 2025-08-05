@@ -3,12 +3,12 @@
  * Custom base styles that extend Tailwind's default base layer
  */
 
+/* Import our custom style reset first */
+@import url('./style-reset.css');
+
 @tailwind base;
 
 @layer base {
-  /* Import our custom style reset */
-  @import './style-reset.css';
-  
   /* Root CSS variables for theming */
   :root {
     /* Primary colors */

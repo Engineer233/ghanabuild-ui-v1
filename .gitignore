@@ -5,3 +5,13 @@ dist/
 .DS_Store
 *.log
 coverage/
+
+# Testing artifacts
+playwright-report/
+test-results/
+.percy/
+percy-screenshots/
+
+# Build artifacts
+.cache/
+.temp/

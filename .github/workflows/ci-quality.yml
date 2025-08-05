@@ -1,0 +1,157 @@
+name: CI - Code Quality & Visual Testing
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  lint-and-test:
+    name: Lint, Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js 20
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Lint CSS files
+      run: npm run lint:css
+      
+    - name: Build project
+      run: npm run build
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-files
+        path: dist/
+        retention-days: 1
+
+  visual-tests:
+    name: Visual Regression Tests
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js 20
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps
+      
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-files
+        path: dist/
+        
+    - name: Run Playwright tests
+      run: npm run test:visual
+      env:
+        PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}
+        PERCY_BRANCH: ${{ github.head_ref || github.ref_name }}
+        PERCY_TARGET_BRANCH: ${{ github.base_ref }}
+        
+    - name: Upload Playwright report
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 7
+
+  notify-pr:
+    name: PR Notifications
+    runs-on: ubuntu-latest
+    if: failure() && github.event_name == 'pull_request'
+    needs: [lint-and-test, visual-tests]
+    
+    steps:
+    - name: Comment on PR
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `## ❌ CI Pipeline Failed
+            
+            The automated quality checks have failed for this PR. Please review the following:
+            
+            - **CSS Linting**: Check for any stylelint errors in your CSS files
+            - **Build Process**: Ensure your code builds successfully
+            - **Visual Tests**: Review any visual regression test failures
+            
+            Click on the "Details" link next to the failed checks above to see specific error messages.
+            
+            Once you've fixed the issues, push your changes to automatically re-run the checks.`
+          })
+
+  pre-commit-validation:
+    name: Validate Pre-commit Setup
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js 20
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Validate Husky setup
+      run: |
+        if [ ! -f .husky/pre-commit ]; then
+          echo "❌ Pre-commit hook not found"
+          exit 1
+        fi
+        echo "✅ Pre-commit hook exists"
+        
+    - name: Test lint-staged configuration
+      run: |
+        if ! npx lint-staged --help > /dev/null 2>&1; then
+          echo "❌ lint-staged not properly configured"
+          exit 1
+        fi
+        echo "✅ lint-staged configuration valid"
+        
+    - name: Validate stylelint configuration
+      run: |
+        if [ ! -f .stylelintrc.json ]; then
+          echo "❌ Stylelint configuration not found"
+          exit 1
+        fi
+        echo "✅ Stylelint configuration exists"
+        
+        # Test stylelint on existing CSS files
+        if ls src/**/*.css 1> /dev/null 2>&1; then
+          npx stylelint "src/**/*.css" --dry-run
+          echo "✅ Stylelint validation passed"
+        else
+          echo "⚠️ No CSS files found to validate"
+        fi

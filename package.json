@@ -16,8 +16,7 @@
   },
   "lint-staged": {
     "src/**/*.css": [
-      "stylelint --fix",
-      "git add"
+      "stylelint --fix"
     ]
   },
   "dependencies": {
