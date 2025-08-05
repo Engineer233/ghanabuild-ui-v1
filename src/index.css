@@ -1,3 +1,2 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Import our comprehensive Tailwind base configuration */
+@import './styles/tailwind-base.css';
