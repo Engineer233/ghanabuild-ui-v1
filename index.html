@@ -8,6 +8,13 @@
     <link rel="icon" href="/favicon.ico" />
     <!-- Tailwind CDN for quick prototyping -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Add standard text-size-adjust for better browser support */
+      html, body {
+        text-size-adjust: 100%;
+        -webkit-text-size-adjust: 100%; /* Fallback for older WebKit browsers */
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
