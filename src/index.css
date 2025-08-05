@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 
+ * Override Tailwind's base styles to remove deprecated webkit-text-size-adjust
+ * and use only the modern text-size-adjust property
+ */
+:host,
+html {
+  -webkit-text-size-adjust: unset !important; /* Remove deprecated property */
+  text-size-adjust: 100% !important; /* Use modern property */
+}
