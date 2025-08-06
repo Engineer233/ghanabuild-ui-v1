@@ -21,10 +21,10 @@ app.post('/estimate', (req, res) => {
     }
     const cost = estimateCost(data);
     res.json({ cost, timestamp: new Date().toISOString() });
-  } catch (error) {
+  } catch (_error) {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Orchestration bot running on port ${PORT}`));
+app.listen(PORT, () => console.error(`Orchestration bot running on port ${PORT}`));

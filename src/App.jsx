@@ -1,7 +1,6 @@
-import { motion } from 'framer-motion';
-
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { trackEvent, logError, trackPerformance } from './monitoring.js';
 
 // Accessible ValidationModal with focus trap
 function ValidationModal({ isOpen, onClose, message, details }) {
@@ -118,13 +117,32 @@ function ProjectForm({ onFormSubmit, isLoading }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    trackEvent('form_submission_attempt', {
+      region: formData.region,
+      projectType: formData.projectType,
+      totalFloorArea: formData.totalFloorArea
+    });
+    
+    const startTime = performance.now();
     const errors = validateForm();
+    const validationTime = performance.now() - startTime;
+    
+    trackPerformance('form_validation', validationTime);
+    
     if (errors.length > 0) {
       setModalMessage("Please correct the following errors:");
       setModalDetails(errors);
       setIsModalOpen(true);
+      
+      trackEvent('form_validation_failed', {
+        errorCount: errors.length,
+        errors: errors
+      });
       return;
     }
+    
+    trackEvent('form_validation_success');
     onFormSubmit(formData);
   };
 
@@ -346,15 +364,49 @@ function App() {
   const fetchEstimate = async (formData) => {
     setIsLoading(true);
     setError(null);
+    
+    const startTime = performance.now();
+    
     try {
+      trackEvent('api_request_started', {
+        region: formData.region,
+        projectType: formData.projectType
+      });
+      
       const { data } = await axios.post(
         "https://ghanabuild-backend.onrender.com/estimate",
         formData,
         { timeout: 15000 }
       );
+      
+      const duration = performance.now() - startTime;
+      trackPerformance('api_request_success', duration, {
+        totalCost: data.totalCost
+      });
+      
+      trackEvent('estimate_received', {
+        totalCost: data.totalCost,
+        duration: Math.round(duration)
+      });
+      
       setEstimateData(data);
     } catch (err) {
-      setError(err.response?.data?.error || err.message || "Failed to fetch estimate");
+      const duration = performance.now() - startTime;
+      const errorMessage = err.response?.data?.error || err.message || "Failed to fetch estimate";
+      
+      logError(err, {
+        formData,
+        duration,
+        endpoint: "https://ghanabuild-backend.onrender.com/estimate"
+      });
+      
+      trackEvent('api_request_failed', {
+        error: errorMessage,
+        duration: Math.round(duration),
+        statusCode: err.response?.status
+      });
+      
+      setError(errorMessage);
       setEstimateData(
         err.response?.data?.details
           ? { details: err.response.data.details }
@@ -371,6 +423,7 @@ function App() {
   };
 
   const handleRetry = () => {
+    trackEvent('retry_clicked');
     if (lastFormData) fetchEstimate(lastFormData);
   };
 
