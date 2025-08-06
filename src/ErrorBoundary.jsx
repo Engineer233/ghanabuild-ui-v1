@@ -7,7 +7,7 @@ class ErrorBoundary extends React.Component {
     this.state = { hasError: false, error: null, errorInfo: null }
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(_error) {
     // Update state so the next render will show the fallback UI
     return { hasError: true }
   }
@@ -52,7 +52,7 @@ class ErrorBoundary extends React.Component {
               </h1>
               
               <p className="text-gray-600 mb-6">
-                We're sorry, but something unexpected happened. The error has been reported and we're working to fix it.
+                We&apos;re sorry, but something unexpected happened. The error has been reported and we&apos;re working to fix it.
               </p>
               
               <div className="space-y-3">

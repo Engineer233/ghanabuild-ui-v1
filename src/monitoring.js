@@ -117,7 +117,7 @@ export function trackEvent(eventName, properties = {}) {
 
   // Console log in development
   if (process.env.NODE_ENV === 'development') {
-    console.log('Event:', eventName, properties)
+    console.warn('Event:', eventName, properties)
   }
 }
 
@@ -149,7 +149,7 @@ export function trackPerformance(name, duration, metadata = {}) {
   }
 
   if (process.env.NODE_ENV === 'development') {
-    console.log(`Performance: ${name}`, { duration, ...metadata })
+    console.warn(`Performance: ${name}`, { duration, ...metadata })
   }
 }
 
