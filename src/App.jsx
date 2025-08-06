@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
+import { GDPRConsentBanner, PrivacyPolicyLink } from './components/GDPRConsent.jsx';
+import { monitoring } from './monitoring.js';
 
 // Accessible ValidationModal with focus trap
 function ValidationModal({ isOpen, onClose, message, details }) {
@@ -372,25 +374,65 @@ function App() {
   const [error, setError] = useState(null);
   const [lastFormData, setLastFormData] = useState(null);
 
+  useEffect(() => {
+    // Initialize monitoring services
+    monitoring.init();
+    monitoring.trackPageView('/', 'Home Page');
+
+    // Listen for GDPR consent changes
+    const handleConsentUpdate = (event) => {
+      const consent = event.detail;
+      if (consent.analytics) {
+        monitoring.analytics.init();
+      }
+    };
+
+    window.addEventListener('gdpr-consent-updated', handleConsentUpdate);
+    return () => window.removeEventListener('gdpr-consent-updated', handleConsentUpdate);
+  }, []);
+
   const fetchEstimate = async (formData) => {
     setIsLoading(true);
     setError(null);
+    
+    const timer = monitoring.datadog.startTimer('estimate_request');
+    
     try {
+      monitoring.trackUserAction('estimate_request_started', {
+        region: formData.region,
+        project_type: formData.projectType
+      });
+
       const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
       const { data } = await axios.post(
         `${apiUrl}/api/estimate`,
         formData,
         { timeout: 15000 }
       );
+      
       setEstimateData(data);
+      monitoring.trackCostEstimate(data, formData);
+      monitoring.trackFormSubmission('cost_estimate_form', true);
     } catch (err) {
-      setError(err.response?.data?.error || err.message || "Failed to fetch estimate");
+      const errorMessage = err.response?.data?.error || err.message || "Failed to fetch estimate";
+      setError(errorMessage);
+      
+      monitoring.captureError(err, {
+        form_data: formData,
+        api_url: import.meta.env.VITE_API_BASE_URL
+      });
+      
+      monitoring.trackFormSubmission('cost_estimate_form', false, {
+        error_message: errorMessage
+      });
+      
       setEstimateData(
         err.response?.data?.details
           ? { details: err.response.data.details }
           : null
       );
     } finally {
+      timer.end();
       setIsLoading(false);
     }
   };
@@ -401,7 +443,13 @@ function App() {
   };
 
   const handleRetry = () => {
-    if (lastFormData) fetchEstimate(lastFormData);
+    if (lastFormData) {
+      monitoring.trackUserAction('estimate_retry', {
+        region: lastFormData.region,
+        project_type: lastFormData.projectType
+      });
+      fetchEstimate(lastFormData);
+    }
   };
 
   return (
@@ -422,6 +470,10 @@ function App() {
       <footer className="bg-gray-800 text-white p-4 text-center">
         <p>&copy; 2025 Ghanabuild.AI. All rights reserved.</p>
       </footer>
+      
+      {/* GDPR Consent Banner */}
+      <GDPRConsentBanner />
+      <PrivacyPolicyLink />
     </div>
   );
 }

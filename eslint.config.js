@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
   {
-    ignores: ['dist', 'node_modules', 'coverage', 'playwright-report', 'test-results']
+    ignores: ['dist', 'node_modules', 'coverage', 'playwright-report', 'test-results', 'orchestration-bot.js']
   },
   {
     files: ['**/*.{js,jsx}'],
@@ -23,6 +23,10 @@ export default [
         setInterval: 'readonly',
         clearInterval: 'readonly',
         AbortController: 'readonly',
+        localStorage: 'readonly',
+        CustomEvent: 'readonly',
+        performance: 'readonly',
+        navigator: 'readonly',
         // Node.js globals
         process: 'readonly',
         require: 'readonly',
