@@ -135,7 +135,133 @@ function ProjectForm({ onFormSubmit, isLoading }) {
       <section className="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md">
         <h2 className="text-xl font-semibold mb-4">Enter Your Project Details</h2>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* ...form inputs... */}
+          <div>
+            <label htmlFor="region" className="block text-sm font-medium text-gray-700 mb-1">
+              Region
+            </label>
+            <input
+              type="text"
+              id="region"
+              name="region"
+              value={formData.region}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., Greater Accra"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="projectType" className="block text-sm font-medium text-gray-700 mb-1">
+              Project Type
+            </label>
+            <select
+              id="projectType"
+              name="projectType"
+              value={formData.projectType}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="residential">Residential</option>
+              <option value="commercial">Commercial</option>
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="totalFloorArea" className="block text-sm font-medium text-gray-700 mb-1">
+              Total Floor Area (sq ft)
+            </label>
+            <input
+              type="number"
+              id="totalFloorArea"
+              name="totalFloorArea"
+              value={formData.totalFloorArea}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., 2500"
+              min="500"
+              max="10000"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="numberOfBathrooms" className="block text-sm font-medium text-gray-700 mb-1">
+              Number of Bathrooms
+            </label>
+            <input
+              type="number"
+              id="numberOfBathrooms"
+              name="numberOfBathrooms"
+              value={formData.numberOfBathrooms}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., 3"
+              min="1"
+              max="10"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="numberOfFloors" className="block text-sm font-medium text-gray-700 mb-1">
+              Number of Floors
+            </label>
+            <input
+              type="number"
+              id="numberOfFloors"
+              name="numberOfFloors"
+              value={formData.numberOfFloors}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., 2"
+              min="1"
+              max="5"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="preferredFinishQuality" className="block text-sm font-medium text-gray-700 mb-1">
+              Preferred Finish Quality
+            </label>
+            <select
+              id="preferredFinishQuality"
+              name="preferredFinishQuality"
+              value={formData.preferredFinishQuality}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="basic">Basic</option>
+              <option value="standard">Standard</option>
+              <option value="premium">Premium</option>
+            </select>
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                name="includeExternalWorks"
+                checked={formData.includeExternalWorks}
+                onChange={handleChange}
+                className="mr-2 rounded focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Include External Works (landscaping, driveway, etc.)
+              </span>
+            </label>
+          </div>
+
+          <div className="md:col-span-2">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? "Calculating..." : "Get Estimate"}
+            </button>
+          </div>
         </form>
       </section>
       <ValidationModal isOpen={isModalOpen} onClose={closeModal} message={modalMessage} details={modalDetails} />
@@ -156,7 +282,75 @@ function EstimateSummary({ estimateData, isLoading, error, onRetry }) {
     }
   }, [isLoading]);
 
-  // ...rest of EstimateSummary code using <motion.*> components...
+  if (isLoading) {
+    return (
+      <motion.section 
+        className="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md mt-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <h2 className="text-xl font-semibold mb-4">Calculating Your Estimate...</h2>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div 
+            className="bg-blue-600 h-2 rounded-full transition-all duration-200"
+            style={{ width: `${progress}%` }}
+          ></div>
+        </div>
+        <p className="text-gray-600 mt-2">Please wait while we process your request...</p>
+      </motion.section>
+    );
+  }
+
+  if (error) {
+    return (
+      <motion.section 
+        className="max-w-4xl mx-auto bg-red-50 border border-red-200 p-6 rounded-lg mt-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <h2 className="text-xl font-semibold mb-4 text-red-800">Error</h2>
+        <p className="text-red-600 mb-4">{error}</p>
+        <button
+          onClick={onRetry}
+          className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+        >
+          Try Again
+        </button>
+      </motion.section>
+    );
+  }
+
+  if (estimateData) {
+    return (
+      <motion.section 
+        className="max-w-4xl mx-auto bg-green-50 border border-green-200 p-6 rounded-lg mt-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <h2 className="text-xl font-semibold mb-4 text-green-800">Your Cost Estimate</h2>
+        {estimateData.totalCost && (
+          <div className="text-2xl font-bold text-green-600 mb-4">
+            GHS {estimateData.totalCost.toLocaleString()}
+          </div>
+        )}
+        {estimateData.details && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Object.entries(estimateData.details).map(([key, value]) => (
+              <div key={key} className="bg-white p-3 rounded border">
+                <div className="font-semibold capitalize">{key.replace(/([A-Z])/g, ' $1')}</div>
+                <div className="text-gray-600">GHS {value.toLocaleString()}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </motion.section>
+    );
+  }
+
+  return null;
 }
 
 function App() {
