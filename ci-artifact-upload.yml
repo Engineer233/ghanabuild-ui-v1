@@ -1,0 +1,6 @@
+name: CI with Artifact Upload
+
+on:
+  push:
+    branches: [main, robust/fix-interactive-ui]
+  pull_request:
